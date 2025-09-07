@@ -20,6 +20,12 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 5s
+      retries: 10
+      start_period: 10s
+
 
   postgres:
     image: postgres:16
@@ -38,8 +44,10 @@ services:
     build: ./userService
     env_file: ./.env
     depends_on:
-      - postgres
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: always
 
   social:
@@ -47,15 +55,19 @@ services:
     env_file:
       - ./.env
     depends_on:
-      - postgres
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   workout:
     build: ./workoutService
     env_file: ./.env
     depends_on:
-      - postgres
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: always
 
 
