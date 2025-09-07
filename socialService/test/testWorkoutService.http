@@ -1,0 +1,184 @@
+### get the token
+# Test user login. Should return 200 and a token in body.
+POST {{base_path}}/users/login
+Content-Type: application/json
+
+{
+  "email" : "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.global.set("access_token", response.body.token);
+    client.assert(response.status === 200, "Login should succeed with 200");
+%}
+
+
+### check if our internal network went down somehow
+# This is a health-check endpoint for internal service communication
+GET {{base_path}}/workouts/tests/workout_user_comms
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.global.set("user_id", response.body.id);
+
+    client.assert(response.status === 200, "Internal comm test should return 200");
+%}
+
+
+### default paginated endpoint
+# GET all workouts (page 1, default limit)
+GET {{base_path}}/workouts/post/
+
+> {%
+    client.assert(response.status === 200, "Default GET workouts should return 200");
+    client.assert(response.body.data instanceof Array, "data should be an array");
+%}
+
+
+### if pagination works
+# Test pagination with page=2&limit=2
+GET {{base_path}}/workouts/post/?page=2&limit=2
+
+> {%
+    client.assert(response.status === 200, "Paginated GET should return 200");
+    client.assert(response.body.data.length <= 2, "Returned data should respect limit");
+%}
+
+
+### if pagination will break
+# Negative page/limit should fallback to defaults
+GET {{base_path}}/workouts/post/?page=-2&limit=-2
+
+> {%
+    client.assert(response.status === 200, "Negative pagination should return 200 and fallback");
+    client.assert(response.body.page === 1 && response.body.limit === 1, "Pagination fallback works");
+%}
+
+
+### if authentication across services work
+# GET only my workouts (requires auth)
+GET {{base_path}}/workouts/post/mine
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.assert(response.status === 200, "GET /mine should succeed for authenticated user");
+%}
+
+
+### create a new workout (unauthorized)
+POST {{base_path}}/workouts/post/
+Content-Type: application/json
+
+{
+  "title": "{{ $random.ancient.god }} {{$random.book.title}}" ,
+  "elements": [
+    { "type": "video" , "video": "{{ $random.internet.url }}" },
+    { "type": "paragraph" , "paragraph": "{{ $random.alphabetic (20) }}" }
+  ],
+  "tags": []
+}
+
+> {%
+    client.assert(response.status === 401, "Should fail without auth");
+%}
+
+
+### create a new workout (authorized)
+POST {{base_path}}/workouts/post/
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "title": "{{ $random.ancient.god }} {{$random.book.title}}" ,
+  "elements": [
+    { "type": "video" , "video": "{{ $random.internet.url }}" },
+    { "type": "paragraph" , "paragraph": "{{ $random.alphabetic (20) }}" }
+  ],
+  "tags": []
+}
+
+> {%
+    client.global.set("post_id", response.body.id);
+    client.assert(response.status === 201, "Workout creation should return 201");
+%}
+
+
+### GET the created workout
+GET {{base_path}}/workouts/post/{{post_id}}
+
+> {%
+    client.assert(response.status === 200, "GET created workout should return 200");
+%}
+
+
+### UPDATE workout (unauthenticated)
+PUT {{base_path}}/workouts/post/{{post_id}}
+Content-Type: application/json
+
+{
+    "title": "{{ $random.ancient.god }} {{$random.book.title}}"
+}
+
+> {%
+    client.assert(response.status === 401, "Unauthorized update should return 401");
+%}
+
+
+### UPDATE workout (authorized)
+PUT {{base_path}}/workouts/post/{{post_id}}
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+    "title": "{{ $random.ancient.god }} {{$random.book.title}}"
+}
+
+> {%
+    client.assert(response.status === 200, "Authorized update should return 200");
+%}
+
+
+### DELETE workout (unauthenticated)
+DELETE {{base_path}}/workouts/post/{{post_id}}
+
+> {%
+    client.assert(response.status === 401, "Unauthorized delete should return 401");
+%}
+
+
+### DELETE workout (authorized)
+DELETE {{base_path}}/workouts/post/{{post_id}}
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.assert(response.status === 204, "Authorized delete should return 204");
+%}
+
+
+### GET deleted workout
+GET {{base_path}}/workouts/post/{{post_id}}
+
+> {%
+    client.assert(response.status === 404, "Deleted workout should return 404");
+%}
+
+### Get all tags
+GET {{base_path}}/workouts/tags
+
+> {%
+    client.assert(response.status === 200, "I guess it should succeed");
+%}
+
+###
+GET {{base_path}}/workouts/tags?search=b
+
+> {%
+    client.assert(response.status === 200, "I guess it should succeed");
+%}
+
+###
+GET {{base_path}}/social/posts/13
+
+###
+GET {{base_path}}/workouts/post

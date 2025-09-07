@@ -1,0 +1,16 @@
+# Ignore node modules & logs
+node_modules
+npm-debug.log
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore env and local configs
+.env
+
+# Ignore build artifacts (we copy from builder stage instead)
+dist
+
+# Ignore tests & local junk
+test
+coverage
+*.md
