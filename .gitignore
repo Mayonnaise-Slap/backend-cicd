@@ -5,3 +5,4 @@ init/init-database.sql
 /base/package.json
 /base/package-lock.json
 /base/tsconfig.json
+.env
