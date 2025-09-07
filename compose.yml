@@ -39,6 +39,7 @@ services:
     env_file: ./.env
     depends_on:
       - postgres
+      - rabbitmq
     restart: always
 
   social:
@@ -47,12 +48,14 @@ services:
       - ./.env
     depends_on:
       - postgres
+      - rabbitmq
 
   workout:
     build: ./workoutService
     env_file: ./.env
     depends_on:
       - postgres
+      - rabbitmq
     restart: always
 
 
