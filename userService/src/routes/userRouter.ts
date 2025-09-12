@@ -57,7 +57,7 @@ router.delete("/me", authMiddleware, async (req: AuthRequest, res) => {
 });
 
 router.get("/presentation/route-to-update", async (req, res) => {
-    return res.status(200).send({"hello": "world"});
+    return res.status(200).send({"hello": "world", "updated": "request"});
 })
 
 export default router;
